@@ -100,8 +100,8 @@ Mauve was originally developed by the **Aaron Darling** while a graduate student
 at the University of Wisconsin–Madison.
 Original Repository can be found at: 
 **https://darlinglab.org/mauve/mauve.html**
-This classroom edition was built and maintained by the **Cryptic Prophage Lab** at the 
-Univeristy of Texas-El Pasofor use inn microbial genomics coursework.
+This classroom edition was built and maintained by the **Cryptic Prophage Lab** at the
+University of Texas at El Paso for use in microbial genomics coursework.
 
 Original Mauve paper:
 > Darling, A.E., Mau, B., Perna, N.T. (2010). progressiveMauve: Multiple Genome Alignment
