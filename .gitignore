@@ -1,0 +1,6 @@
+# Genome data and alignment outputs — distributed as release assets, not committed
+*_mauve/
+zips/
+test_align/
+bin/
+make_zips.ps1
