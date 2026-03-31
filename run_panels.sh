@@ -4,6 +4,24 @@
 # J. Apodaca | Undergraduate Microbiology Laboratory
 # Cryptic Prophage Lab, University of Texas at El Paso
 # ============================================================
+#
+# PIPELINE OVERVIEW (per panel):
+#   1. download_panel  — fetch genome + GFF3 + protein from NCBI
+#                        via `datasets`, unzip, copy to mauve_input/
+#                        Prepend readable label to FIRST FASTA header only
+#                        (subsequent plasmid/contig headers left as-is)
+#   2. run_mauve       — align all .fna files in mauve_input/ using
+#                        progressiveMauve (WSL bioconda 2022 binary)
+#                        Produces alignment.xmfa + backbone files
+#   3. post_process    — fix the XMFA for portable distribution:
+#                          a) strip absolute #SequenceNFile paths → bare filenames
+#                          b) inject #AnnotationNFile/#AnnotationNFormat entries
+#                             so Mauve auto-loads GFF3 on open (no manual loading)
+#                          c) strip #BackboneFile path → bare filename
+#
+# NOTE: post_process calls fix_xmfa.py via PowerShell (gh auth + python live
+#       in the Windows credential store / PATH, not the Git Bash POSIX layer).
+#
 # Usage:
 #   bash run_panels.sh              # all 5 panels
 #   bash run_panels.sh saureus
@@ -20,9 +38,14 @@ set -e
 MAUVE_TOOLS="/c/Users/japodaca15/projectsClaude/mauve-master"
 export PATH="${MAUVE_TOOLS}:${PATH}"
 
-# progressiveMauve: run via WSL (Windows binary has stdout I/O bug)
+# progressiveMauve: run via WSL (Windows binary has a broken --output flag;
+#   WSL bioconda 2022 build is stable. Base conda env has boost ABI conflict —
+#   use the dedicated 'mauve' env by hardcoding the full binary path.)
 PMAUVE_WSL="/home/japodaca15/miniconda3/envs/mauve/bin/progressiveMauve"
-WSL_RUN="wsl.exe bash -c"
+
+# fix_xmfa.py: post-alignment XMFA cleanup script (same directory as this script)
+SCRIPT_DIR="/c/Users/japodaca15/projectsClaude/mauve-classroom"
+FIX_XMFA_PY="${SCRIPT_DIR}/fix_xmfa.py"
 
 PANEL="${1:-all}"
 
@@ -62,8 +85,15 @@ download_panel() {
 
     if [ -n "$FASTA" ]; then
       cp "$FASTA" "${ORG_DIR}/mauve_input/${LABEL}.fna"
-      # Rewrite FASTA headers so Mauve displays organism name first
-      sed -i "s/^>/>${LABEL} /" "${ORG_DIR}/mauve_input/${LABEL}.fna"
+      # Prepend readable label to the FIRST sequence header only.
+      # Subsequent headers (plasmids, contigs) keep their original NCBI
+      # accession as the first token so GFF3 col-1 matching works in Mauve.
+      # (sed "s/^>//" would wrongly relabel ALL sequences in multi-seq files.)
+      awk -v lbl="${LABEL}" \
+        '/^>/ && !done { sub(/^>/, ">" lbl " "); done=1 } { print }' \
+        "${ORG_DIR}/mauve_input/${LABEL}.fna" \
+        > "${ORG_DIR}/mauve_input/${LABEL}.fna.tmp" \
+        && mv "${ORG_DIR}/mauve_input/${LABEL}.fna.tmp" "${ORG_DIR}/mauve_input/${LABEL}.fna"
     else
       echo "      WARNING: no .fna found for $GCF — check accession or try efetch fallback"
     fi
@@ -111,6 +141,31 @@ run_mauve() {
   echo "  Open in Mauve GUI: File > Open > ${MAUVE_OUT}/alignment.xmfa"
   echo "  Then add GFF3 tracks: right-click each genome > Add Sequence Feature Track"
   echo "  Load matching .gff3 from ${ORG_DIR}/mauve_input/"
+}
+
+# ─── Post-process XMFA after alignment ──────────────────────
+# Fixes three portability problems that progressiveMauve leaves behind:
+#   1. #SequenceNFile has absolute build-machine paths  → stripped to bare filenames
+#   2. No #AnnotationNFile entries written by aligner   → injected from mauve_input/*.gff3
+#   3. #BackboneFile has stale subdirectory path        → stripped to bare filename
+#
+# After this step the XMFA is self-contained: open it in Mauve from any directory
+# where the .fna, .gff3, and .xmfa* files are co-located (as in the student zip).
+#
+# Implementation note: called via powershell.exe because Python and gh credentials
+# live in the Windows PATH/keyring, which is not visible to Git Bash's POSIX layer.
+post_process() {
+  local ORG_DIR="$1"
+  local ABS_PANEL="${SCRIPT_DIR}/${ORG_DIR}"
+
+  # Convert Git Bash /c/... path to Windows C:/... for PowerShell
+  local WIN_PANEL WIN_SCRIPT
+  WIN_PANEL=$(echo "$ABS_PANEL"   | sed 's|^/c/|C:/|')
+  WIN_SCRIPT=$(echo "$FIX_XMFA_PY" | sed 's|^/c/|C:/|')
+
+  echo ""
+  echo "  Post-processing XMFA for $ORG_DIR ..."
+  powershell.exe -Command "python '$WIN_SCRIPT' '$WIN_PANEL'"
 }
 
 # ─── PANELS ──────────────────────────────────────────────────
@@ -168,35 +223,45 @@ declare -A SE_STRAINS=(
 case "$PANEL" in
   saureus)
     download_panel "saureus_mauve" SA_STRAINS
-    run_mauve "saureus_mauve"
+    run_mauve      "saureus_mauve"
+    post_process   "saureus_mauve"
     ;;
   pseudomonas)
     download_panel "paeruginosa_mauve" PA_STRAINS
-    run_mauve "paeruginosa_mauve"
+    run_mauve      "paeruginosa_mauve"
+    post_process   "paeruginosa_mauve"
     ;;
   ecoli)
     download_panel "ecoli_mauve" EC_STRAINS
-    run_mauve "ecoli_mauve"
+    run_mauve      "ecoli_mauve"
+    post_process   "ecoli_mauve"
     ;;
   salmonella)
     download_panel "salmonella_mauve" SAL_STRAINS
-    run_mauve "salmonella_mauve"
+    run_mauve      "salmonella_mauve"
+    post_process   "salmonella_mauve"
     ;;
   epidermidis)
     download_panel "epidermidis_mauve" SE_STRAINS
-    run_mauve "epidermidis_mauve"
+    run_mauve      "epidermidis_mauve"
+    post_process   "epidermidis_mauve"
     ;;
   all)
     download_panel "saureus_mauve"     SA_STRAINS
-    run_mauve "saureus_mauve"
+    run_mauve      "saureus_mauve"
+    post_process   "saureus_mauve"
     download_panel "paeruginosa_mauve" PA_STRAINS
-    run_mauve "paeruginosa_mauve"
+    run_mauve      "paeruginosa_mauve"
+    post_process   "paeruginosa_mauve"
     download_panel "ecoli_mauve"       EC_STRAINS
-    run_mauve "ecoli_mauve"
+    run_mauve      "ecoli_mauve"
+    post_process   "ecoli_mauve"
     download_panel "salmonella_mauve"  SAL_STRAINS
-    run_mauve "salmonella_mauve"
+    run_mauve      "salmonella_mauve"
+    post_process   "salmonella_mauve"
     download_panel "epidermidis_mauve" SE_STRAINS
-    run_mauve "epidermidis_mauve"
+    run_mauve      "epidermidis_mauve"
+    post_process   "epidermidis_mauve"
     ;;
   *)
     echo "Unknown panel: $PANEL"
@@ -206,9 +271,17 @@ case "$PANEL" in
 esac
 
 echo ""
-echo "========================================"
-echo " Script complete."
-echo " Alignment files (.xmfa) are in:"
+echo "========================================================"
+echo " Pipeline complete."
+echo ""
+echo " For each panel the following steps ran:"
+echo "   1. download_panel  — genomes fetched from NCBI, FASTA"
+echo "                        headers labelled (first seq only)"
+echo "   2. run_mauve       — progressiveMauve alignment via WSL"
+echo "   3. post_process    — XMFA paths stripped + annotation"
+echo "                        headers injected (fix_xmfa.py)"
+echo ""
+echo " Alignment files ready:"
 echo "   saureus_mauve/mauve_output/alignment.xmfa"
 echo "   paeruginosa_mauve/mauve_output/alignment.xmfa"
 echo "   ecoli_mauve/mauve_output/alignment.xmfa"
@@ -217,6 +290,10 @@ echo "   epidermidis_mauve/mauve_output/alignment.xmfa"
 echo ""
 echo " In Mauve GUI:"
 echo "   File > Open > <org>_mauve/mauve_output/alignment.xmfa"
-echo "   Right-click each genome track > Add Sequence Feature Track"
-echo "   Load matching .gff3 from <org>_mauve/mauve_input/"
-echo "========================================"
+echo "   Annotation tracks load automatically — no manual .gff3"
+echo "   loading required."
+echo ""
+echo " To package for distribution:"
+echo "   powershell.exe -ExecutionPolicy Bypass -File make_zips.ps1"
+echo "   powershell.exe -ExecutionPolicy Bypass -File upload_zips.ps1"
+echo "========================================================"
