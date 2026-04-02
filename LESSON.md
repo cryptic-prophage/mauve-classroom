@@ -48,7 +48,7 @@ Mauve makes this visible at the whole-genome scale in a single view.
 
 ## Datasets
 
-Five alignment panels are available as independent lab exercises. Each zip contains the pre-computed alignment and all input genome + annotation files. Students can work through any one panel in a 2-hour lab; all five can be assigned across lab sections or used progressively throughout a course.
+Six alignment panels are available as independent lab exercises. Each zip contains the pre-computed alignment and all input genome + annotation files. Students can work through any one panel in a 2-hour lab; all six can be assigned across lab sections or used progressively throughout a course.
 
 ### Panel 1 — *Staphylococcus aureus*: Antibiotic Resistance and Virulence
 **Theme:** How do community MRSA, hospital MRSA, and vancomycin-intermediate strains compare genomically?
@@ -131,6 +131,24 @@ Five alignment panels are available as independent lab exercises. Each zip conta
 
 ---
 
+### Panel 6 — *Acinetobacter*: Environmental Survivor vs. Hospital Superbug
+**Theme:** How does a radiation-resistant soil bacterium relate to one of the most drug-resistant hospital pathogens?
+
+| Strain | Key feature |
+|--------|------------|
+| NBRC 102413 | *A. radioresistens* type strain |
+| DD78 | *A. radioresistens* environmental isolate |
+| LH6 | *A. radioresistens*, poultry manure (USA) |
+| NIPH 2130 | *A. radioresistens*, urine/clinical (Norway); scaffold-level assembly |
+| *A. baumannii* ATCC 19606 | *A. baumannii* type strain (outgroup) |
+| *A. baumannii* AB5075-UW | MDR wound isolate, Walter Reed 2008 (outgroup) |
+
+**Key concepts:** Environmental vs. clinical niche adaptation, multidrug resistance islands (carbapenemases, OXA-type β-lactamases, efflux pumps), radiation and desiccation tolerance, scaffold-level assembly in whole-genome alignment, *Acinetobacter* genus core
+
+> **Assembly note:** NIPH 2130 is a scaffold-level assembly (6 scaffolds, N50 ~3.08 Mb). Its genome track will appear as multiple fragments in Mauve — this is expected and provides a useful teaching moment about assembly quality and its effect on alignment visualization.
+
+---
+
 ## Lab Procedure
 
 ### Before the lab
@@ -206,6 +224,7 @@ All genomes were downloaded from NCBI and aligned using progressiveMauve (2022 b
 | *E. coli* | GCF_000005845.2, GCF_000732965.1, GCF_000175675.1, GCF_000007405.1, GCF_000026545.1 |
 | *Salmonella* | GCF_000006945.2, GCF_000020705.1, GCF_000195995.1, GCF_000020925.1, GCF_000020765.1, GCF_000006925.2 |
 | *S. epidermidis* | GCF_000007645.1, GCF_000006285.1, GCF_000705075.1 + *S. aureus* outgroups |
+| *Acinetobacter* | GCF_006757745.1, GCF_005519305.1, GCF_003258335.1, GCF_000368885.1 + GCF_009759685.1, GCF_000963815.1 (outgroups) |
 
 ---
 

@@ -23,12 +23,13 @@
 #       in the Windows credential store / PATH, not the Git Bash POSIX layer).
 #
 # Usage:
-#   bash run_panels.sh              # all 5 panels
+#   bash run_panels.sh              # all 6 panels
 #   bash run_panels.sh saureus
 #   bash run_panels.sh pseudomonas
 #   bash run_panels.sh ecoli
 #   bash run_panels.sh salmonella
 #   bash run_panels.sh epidermidis
+#   bash run_panels.sh acinetobacter
 # ============================================================
 
 set -e
@@ -219,6 +220,16 @@ declare -A SE_STRAINS=(
   ["GCF_000013465.1"]="Saureus_USA300_outgroup"
 )
 
+# Acinetobacter panel (4 A. radioresistens + 2 A. baumannii outgroups)
+declare -A ACIN_STRAINS=(
+  ["GCF_006757745.1"]="Aradioresistens_NBRC102413_type"
+  ["GCF_005519305.1"]="Aradioresistens_DD78"
+  ["GCF_003258335.1"]="Aradioresistens_LH6_poultry"
+  ["GCF_000368885.1"]="Aradioresistens_NIPH2130_clinical"
+  ["GCF_009759685.1"]="Abaumannii_ATCC19606_outgroup"
+  ["GCF_000963815.1"]="Abaumannii_AB5075-UW_MDR_outgroup"
+)
+
 # ─── Run based on argument ───────────────────────────────────
 case "$PANEL" in
   saureus)
@@ -246,6 +257,11 @@ case "$PANEL" in
     run_mauve      "epidermidis_mauve"
     post_process   "epidermidis_mauve"
     ;;
+  acinetobacter)
+    download_panel "acinetobacter_mauve" ACIN_STRAINS
+    run_mauve      "acinetobacter_mauve"
+    post_process   "acinetobacter_mauve"
+    ;;
   all)
     download_panel "saureus_mauve"     SA_STRAINS
     run_mauve      "saureus_mauve"
@@ -262,10 +278,13 @@ case "$PANEL" in
     download_panel "epidermidis_mauve" SE_STRAINS
     run_mauve      "epidermidis_mauve"
     post_process   "epidermidis_mauve"
+    download_panel "acinetobacter_mauve" ACIN_STRAINS
+    run_mauve      "acinetobacter_mauve"
+    post_process   "acinetobacter_mauve"
     ;;
   *)
     echo "Unknown panel: $PANEL"
-    echo "Usage: bash $0 [saureus|pseudomonas|ecoli|salmonella|epidermidis|all]"
+    echo "Usage: bash $0 [saureus|pseudomonas|ecoli|salmonella|epidermidis|acinetobacter|all]"
     exit 1
     ;;
 esac
@@ -287,6 +306,7 @@ echo "   paeruginosa_mauve/mauve_output/alignment.xmfa"
 echo "   ecoli_mauve/mauve_output/alignment.xmfa"
 echo "   salmonella_mauve/mauve_output/alignment.xmfa"
 echo "   epidermidis_mauve/mauve_output/alignment.xmfa"
+echo "   acinetobacter_mauve/mauve_output/alignment.xmfa"
 echo ""
 echo " In Mauve GUI:"
 echo "   File > Open > <org>_mauve/mauve_output/alignment.xmfa"
